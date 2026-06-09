@@ -146,6 +146,8 @@ nav button.active { color: var(--accent); }
 .week-day .wd-dot { width: 10px; height: 10px; border-radius: 50%; margin: 5px auto 0; }
 .wd-dot.lift  { background: var(--accent-teal); }
 .wd-dot.ride  { background: var(--accent-blue); }
+.wd-dot.run   { background: #f97316; }
+.wd-dot.walk  { background: #a78bfa; }
 .wd-dot.rest  { background: #333; }
 .wd-dot.empty { background: transparent; border: 1px solid #333; }
 .week-day.today { border-color: var(--accent); }
@@ -506,7 +508,7 @@ canvas#bwChart { width: 100%; height: 140px; display: block; border-radius: 8px;
   <div class="quick-stats">
     <div class="qs-card"><div class="qs-val" id="qsSessions">0</div><div class="qs-label">Sessions</div></div>
     <div class="qs-card"><div class="qs-val" id="qsVolume">0</div><div class="qs-label">Volume (lbs)</div></div>
-    <div class="qs-card"><div class="qs-val" id="qsLastRide">—</div><div class="qs-label">Last Ride</div></div>
+    <div class="qs-card"><div class="qs-val" id="qsLastRide">—</div><div class="qs-label">Cardio This Week</div></div>
     <div class="qs-card"><div class="qs-val" id="qsWeight">—</div><div class="qs-label">Bodyweight</div></div>
   </div>
 
@@ -614,18 +616,25 @@ canvas#bwChart { width: 100%; height: 140px; display: block; border-radius: 8px;
   </div>
 </section>
 
-<!-- ════ RIDES ════ -->
+<!-- ════ CARDIO ════ -->
 <section class="page" id="pageRides">
   <div class="bike-header">
-    <span style="font-size:1.6rem">🚵</span>
+    <span style="font-size:1.6rem" id="cardioHeaderIcon">🚵</span>
     <div>
-      <div class="bike-name">Hyper E9 Explorer</div>
-      <div class="bike-sub">Full-suspension mountain bike · Ride Log</div>
+      <div class="bike-name" id="cardioHeaderName">Hyper E9 Explorer</div>
+      <div class="bike-sub" id="cardioHeaderSub">Full-suspension mountain bike · Ride Log</div>
     </div>
   </div>
 
+  <!-- Activity type selector -->
+  <div class="wtab-bar" style="margin-bottom:14px" id="activityTypeBar">
+    <button class="wtab active" data-activity="Ride">🚵 Ride</button>
+    <button class="wtab" data-activity="Walk">🚶 Walk</button>
+    <button class="wtab" data-activity="Run">🏃 Run</button>
+  </div>
+
   <div class="ride-summary-strip">
-    <div class="qs-card"><div class="qs-val" id="rideWeekDist">0</div><div class="qs-label">km This Week</div></div>
+    <div class="qs-card"><div class="qs-val" id="rideWeekDist">0</div><div class="qs-label" id="rideWeekDistLabel">km This Week</div></div>
     <div class="qs-card"><div class="qs-val" id="rideWeekTime">0m</div><div class="qs-label">Time This Week</div></div>
   </div>
 
@@ -648,7 +657,7 @@ canvas#bwChart { width: 100%; height: 140px; display: block; border-radius: 8px;
       <div class="gps-stat-card"><div class="gps-stat-val" id="gpsAvgVal">0.0</div><div class="gps-stat-label">km/h avg</div></div>
     </div>
     <div id="gpsLiveMap"></div>
-    <button class="btn-end-ride" id="btnEndRide">⏹ End Ride</button>
+    <button class="btn-end-ride" id="btnEndRide">⏹ End Activity</button>
   </div>
 
   <!-- Manual / Post-GPS form -->
@@ -703,11 +712,11 @@ canvas#bwChart { width: 100%; height: 140px; display: block; border-radius: 8px;
         <input class="form-input" type="text" id="rideNotes" placeholder="Weather, trail conditions…"/>
       </div>
     </div>
-    <button class="btn-primary" id="btnLogRide">Save Ride 🚵</button>
+    <button class="btn-primary" id="btnLogRide">Save Activity</button>
     <button class="btn-secondary" id="btnCancelRideForm">Cancel</button>
   </div>
 
-  <div class="section-label">Ride History</div>
+  <div class="section-label" id="rideHistoryLabel">Ride History</div>
   <div id="rideHistory"></div>
 </section>
 
@@ -742,7 +751,7 @@ canvas#bwChart { width: 100%; height: 140px; display: block; border-radius: 8px;
   <div class="profile-summary">
     <div class="ps-card"><div class="ps-val" id="psSessions">0</div><div class="ps-label">Sessions</div></div>
     <div class="ps-card"><div class="ps-val" id="psVolume">0</div><div class="ps-label">Volume (lbs)</div></div>
-    <div class="ps-card"><div class="ps-val" id="psRideDist">0</div><div class="ps-label">Ride km</div></div>
+    <div class="ps-card"><div class="ps-val" id="psRideDist">0</div><div class="ps-label">Cardio km</div></div>
     <div class="ps-card"><div class="ps-val" id="psActiveDays">0</div><div class="ps-label">Active Days</div></div>
   </div>
 
@@ -755,7 +764,7 @@ canvas#bwChart { width: 100%; height: 140px; display: block; border-radius: 8px;
 <nav>
   <button class="active" data-page="pageHome"><span class="icon">🏠</span>Home</button>
   <button data-page="pageWorkout"><span class="icon">🏋️</span>Workout</button>
-  <button data-page="pageRides"><span class="icon">🚵</span>Rides</button>
+  <button data-page="pageRides"><span class="icon">🏃</span>Cardio</button>
   <button data-page="pageProfile"><span class="icon">👤</span>Profile</button>
 </nav>
 
@@ -851,11 +860,18 @@ function fmtVol(v)   { return getUseKg() ? (v * 0.453592).toFixed(0) : v.toFixed
 // ═══════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════
-let currentDay        = null;
-let sessionData       = {};
-let restTimerInterval = null;
-let restSecondsLeft   = 0;
-let distUnit          = getDistUnit();
+let currentDay           = null;
+let sessionData          = {};
+let restTimerInterval    = null;
+let restSecondsLeft      = 0;
+let distUnit             = getDistUnit();
+let currentActivityType  = 'Ride'; // 'Ride' | 'Walk' | 'Run'
+
+const ACTIVITY_META = {
+  Ride: { icon:'🚵', headerName:'Hyper E9 Explorer', headerSub:'Full-suspension mountain bike · Ride Log', gpsBtn:'📍 Start GPS Ride', formTitle:'Log a Ride', saveBtn:'Save Ride 🚵', histLabel:'Ride History', outfit:'Padded shorts, moisture-wicking jersey, helmet.', outfitIcon:'🚵' },
+  Walk: { icon:'🚶', headerName:'Walking',            headerSub:'Cardio Log',                              gpsBtn:'📍 Start GPS Walk', formTitle:'Log a Walk', saveBtn:'Save Walk 🚶', histLabel:'Walk History', outfit:'Comfortable trainers, whatever feels good.',         outfitIcon:'🚶' },
+  Run:  { icon:'🏃', headerName:'Running',            headerSub:'Cardio Log',                              gpsBtn:'📍 Start GPS Run',  formTitle:'Log a Run',  saveBtn:'Save Run 🏃',  histLabel:'Run History',  outfit:'Running shoes, shorts, lightweight top.',            outfitIcon:'🏃' },
+};
 
 // GPS state
 let gpsWatchId        = null;
@@ -886,7 +902,7 @@ function switchPage(id) {
   document.getElementById(id).classList.add('active');
   document.getElementById('headerBadge').textContent = {
     pageHome: 'Home', pageWorkout: currentDay !== null ? `Day ${currentDay+1}` : 'Workout',
-    pageRides: 'Rides', pageProfile: 'Profile'
+    pageRides: 'Cardio', pageProfile: 'Profile'
   }[id] || '';
   if (id === 'pageHome')    renderHome();
   if (id === 'pageRides')   renderRides();
@@ -908,6 +924,30 @@ function getWeekBounds() {
 }
 
 function todayStr() { return new Date().toISOString().slice(0,10); }
+
+// ═══════════════════════════════════════════════════════════
+// ACTIVITY TYPE SELECTOR
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('#activityTypeBar .wtab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#activityTypeBar .wtab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentActivityType = btn.dataset.activity;
+    updateCardioUI();
+    renderRides();
+  });
+});
+
+function updateCardioUI() {
+  const m = ACTIVITY_META[currentActivityType];
+  document.getElementById('cardioHeaderIcon').textContent = m.icon;
+  document.getElementById('cardioHeaderName').textContent = m.headerName;
+  document.getElementById('cardioHeaderSub').textContent  = m.headerSub;
+  document.getElementById('btnStartGPS').textContent      = m.gpsBtn;
+  document.getElementById('rideFormTitle').textContent    = m.formTitle;
+  document.getElementById('btnLogRide').textContent       = m.saveBtn;
+  document.getElementById('rideHistoryLabel').textContent = m.histLabel;
+}
 
 // ═══════════════════════════════════════════════════════════
 // WORKOUT TABS
@@ -1067,11 +1107,16 @@ function renderQuickStats() {
   const wSessions = history.filter(r => { const d=new Date(r.date); return d>=mon&&d<=sun; });
   const weekVol   = wSessions.reduce((a,r)=>a+(r.volume||0),0);
 
+  const wRides = rides.filter(r=>{const d=new Date(r.date+'T12:00:00');return d>=mon&&d<=sun;});
+  const byType = {};
+  wRides.forEach(r=>{const t=r.type||'Ride';byType[t]=(byType[t]||0)+1;});
   let lastRideStr = '—';
-  if (rides.length) {
-    const last = rides[0];
-    const diff = Math.floor((Date.now() - new Date(last.date+'T12:00:00'))/86400000);
-    lastRideStr = `${last.distance}${last.unit}\n${diff===0?'today':diff+'d ago'}`;
+  if(wRides.length){
+    const parts=[];
+    if(byType.Ride) parts.push(`${byType.Ride}🚵`);
+    if(byType.Walk) parts.push(`${byType.Walk}🚶`);
+    if(byType.Run)  parts.push(`${byType.Run}🏃`);
+    lastRideStr = parts.join(' ') || `${wRides.length}`;
   }
 
   let bwStr = '—';
@@ -1099,11 +1144,13 @@ function renderWeekGrid() {
     const day=new Date(mon); day.setDate(mon.getDate()+i); day.setHours(0,0,0,0);
     const dayEnd=new Date(day); dayEnd.setHours(23,59,59,999);
     const hasLift = history.some(r=>{const d=new Date(r.date);return d>=day&&d<=dayEnd;});
-    const hasRide = rides.some(r=>{const d=new Date(r.date+'T12:00:00');return d>=day&&d<=dayEnd;});
+    const dayRide = rides.find(r=>{const d=new Date(r.date+'T12:00:00');return d>=day&&d<=dayEnd;});
+    const hasRide = !!dayRide;
+    const rideType = dayRide ? (dayRide.type||'Ride') : null;
     const isPast  = day<new Date()&&i!==today;
     let dot='empty';
     if (hasLift) dot='lift';
-    else if (hasRide) dot='ride';
+    else if (hasRide) dot= rideType==='Run'?'run':rideType==='Walk'?'walk':'ride';
     else if (isPast&&SCHEDULE[i]!==null) dot='rest';
     const el=document.createElement('div');
     el.className='week-day'+(i===today?' today':'');
@@ -1144,7 +1191,13 @@ function renderOutfit() {
   const todayIdx=getTodayDayIndex(), dayPlan=SCHEDULE[todayIdx];
   let icon,text;
   if(dayPlan!==null){icon=DAYS[dayPlan].outfit.icon;text=DAYS[dayPlan].outfit.text;}
-  else{icon='😴';text="Sweats. You've earned it.";}
+  else {
+    // Rest day — suggest based on most recent cardio activity type
+    const rides=getRides();
+    const recentType = rides.length ? (rides[0].type||'Ride') : currentActivityType;
+    const m=ACTIVITY_META[recentType];
+    icon=m.outfitIcon; text=m.outfit;
+  }
   document.getElementById('outfitIcon').textContent=icon;
   document.getElementById('outfitText').textContent=text;
 }
@@ -1588,7 +1641,7 @@ document.getElementById('btnStartGPS').addEventListener('click',()=>{
   }
   document.getElementById('rideModeSelector').style.display='none';
   document.getElementById('gpsPanel').classList.add('active');
-  document.getElementById('gpsStatus').textContent='Acquiring GPS signal…';
+  document.getElementById('gpsStatus').textContent=`Tracking ${currentActivityType}… Acquiring GPS signal`;
   document.getElementById('gpsStatus').className='gps-status';
   gpsCoords=[]; gpsDistanceKm=0; gpsPrevCoord=null; gpsSpeedNow=0;
   gpsStartTime=Date.now();
@@ -1626,7 +1679,7 @@ document.getElementById('btnStartGPS').addEventListener('click',()=>{
     document.getElementById('gpsDistLabel').textContent=distUnit;
     document.getElementById('gpsSpeedVal').textContent=
       distUnit==='mi'?(gpsSpeedNow*0.621371).toFixed(1):gpsSpeedNow.toFixed(1);
-    document.getElementById('gpsStatus').textContent='🟢 Tracking';
+    document.getElementById('gpsStatus').textContent=`🟢 Tracking ${currentActivityType}`;
     document.getElementById('gpsStatus').className='gps-status on';
 
     if(typeof L!=='undefined'&&gpsLiveMap&&gpsPolyline){
@@ -1649,7 +1702,7 @@ document.getElementById('btnEndRide').addEventListener('click',()=>{
   document.getElementById('rideDist').value=du.toFixed(2);
   document.getElementById('rideHrs').value=Math.floor(elapsed/3600);
   document.getElementById('rideMins').value=Math.floor((elapsed%3600)/60);
-  document.getElementById('rideFormTitle').textContent='Complete Your Ride';
+  document.getElementById('rideFormTitle').textContent=`Complete Your ${currentActivityType}`;
   pendingGpsCoords=gpsCoords.length>1?[...gpsCoords]:null;
   showManualForm();
 });
@@ -1667,7 +1720,7 @@ function showManualForm(){
 }
 function hideManualForm(){
   document.getElementById('rideForm').classList.remove('visible');
-  document.getElementById('rideFormTitle').textContent='Log a Ride';
+  document.getElementById('rideFormTitle').textContent=ACTIVITY_META[currentActivityType].formTitle;
   document.getElementById('rideModeSelector').style.display='';
   pendingGpsCoords=null;
 }
@@ -1697,6 +1750,7 @@ document.getElementById('btnLogRide').addEventListener('click',()=>{
   if(!date||!dist){showToast('Enter date and distance');return;}
   const ride={
     id:Date.now(), date, distance:dist, unit:distUnit,
+    type:currentActivityType,
     durationMins:hrs*60+mins,
     elevation:parseInt(document.getElementById('rideElev').value)||null,
     effort:document.getElementById('rideEffort').value,
@@ -1708,26 +1762,35 @@ document.getElementById('btnLogRide').addEventListener('click',()=>{
   // Reset form
   ['rideDist','rideHrs','rideMins','rideElev','rideNotes','rideRouteName'].forEach(id=>document.getElementById(id).value='');
   hideManualForm();
-  showToast('Ride logged! 🚵');
+  showToast(`${currentActivityType} logged! ${ACTIVITY_META[currentActivityType].icon}`);
   renderRides();
 });
 
 function renderRides(){
-  const rides=getRides();
+  const allRides=getRides();
   const {mon,sun}=getWeekBounds();
-  const wRides=rides.filter(r=>{const d=new Date(r.date+'T12:00:00');return d>=mon&&d<=sun;});
+  const act=currentActivityType;
+
+  // Week stats for current activity type
+  const wRides=allRides.filter(r=>{const d=new Date(r.date+'T12:00:00');return d>=mon&&d<=sun&&(r.type||'Ride')===act;});
   const wDist=wRides.reduce((a,r)=>a+r.distance,0);
   const wMins=wRides.reduce((a,r)=>a+(r.durationMins||0),0);
   document.getElementById('rideWeekDist').textContent=wDist.toFixed(1);
+  document.getElementById('rideWeekDistLabel').textContent=`${distUnit} This Week`;
   document.getElementById('rideWeekTime').textContent=wMins>=60?`${Math.floor(wMins/60)}h${wMins%60?` ${wMins%60}m`:''}`:wMins+'m';
 
+  // Filter history to current activity type (legacy entries without type default to 'Ride')
+  const rides=allRides.filter(r=>(r.type||'Ride')===act);
   const cont=document.getElementById('rideHistory');
-  if(!rides.length){cont.innerHTML='<div class="history-empty">No rides logged yet.</div>';return;}
+  if(!rides.length){cont.innerHTML=`<div class="history-empty">No ${act.toLowerCase()}s logged yet.</div>`;return;}
 
-  // Best ride stats for badges
+  // Per-type best badges
   const bestDist=Math.max(...rides.map(r=>r.distance));
   const bestDur=Math.max(...rides.map(r=>r.durationMins||0));
-  const bestElev=Math.max(...rides.filter(r=>r.elevation).map(r=>r.elevation));
+  const bestElev=rides.filter(r=>r.elevation).length?Math.max(...rides.filter(r=>r.elevation).map(r=>r.elevation)):0;
+  // Best avg pace for runs (lower is better): mins/km
+  const runsWithPace=rides.filter(r=>r.durationMins&&r.distance);
+  const bestPace=runsWithPace.length?Math.min(...runsWithPace.map(r=>r.durationMins/r.distance)):Infinity;
 
   cont.innerHTML=rides.map((r,i)=>{
     const d=new Date(r.date+'T12:00:00');
@@ -1735,20 +1798,28 @@ function renderRides(){
     const dur=r.durationMins?`${Math.floor(r.durationMins/60)}h ${r.durationMins%60}m`:'—';
     const badges=[];
     if(r.distance===bestDist) badges.push('<span class="ride-best-badge">🏆 Longest</span>');
-    if(r.durationMins&&r.durationMins===bestDur) badges.push('<span class="ride-best-badge">⏱ Longest Time</span>');
-    if(r.elevation&&r.elevation===bestElev) badges.push('<span class="ride-best-badge">⛰ Most Elevation</span>');
+    if(act==='Ride'||act==='Walk'){
+      if(r.durationMins&&r.durationMins===bestDur) badges.push('<span class="ride-best-badge">⏱ Longest Time</span>');
+      if(act==='Ride'&&r.elevation&&r.elevation===bestElev) badges.push('<span class="ride-best-badge">⛰ Most Elevation</span>');
+    }
+    if(act==='Run'&&r.durationMins&&r.distance){
+      const pace=r.durationMins/r.distance;
+      if(pace===bestPace) badges.push('<span class="ride-best-badge">⚡ Best Pace</span>');
+    }
+    const typeIcon=ACTIVITY_META[r.type||'Ride'].icon;
     const mapId=`rideMap-${r.id}`;
     return `
       <div class="ride-item" data-rideid="${r.id}" data-rideidx="${i}">
         <div class="ride-row">
           <div>
-            <div class="ride-dist">${r.distance} ${r.unit} ${badges.join('')}</div>
+            <div class="ride-dist">${typeIcon} ${r.distance} ${r.unit} ${badges.join('')}</div>
             <div class="ride-date">${ds}${r.routeName?' · '+r.routeName:''}</div>
           </div>
           <span class="effort-pill effort-${r.effort}">${r.effort}</span>
         </div>
         <div class="ride-stats">
           <div class="ride-stat">Time: <strong>${dur}</strong></div>
+          ${act==='Run'&&r.durationMins&&r.distance?`<div class="ride-stat">Pace: <strong>${(r.durationMins/r.distance).toFixed(1)} min/${r.unit}</strong></div>`:''}
           ${r.elevation?`<div class="ride-stat">Elev: <strong>${r.elevation}m</strong></div>`:''}
           ${r.notes?`<div class="ride-stat">📝 ${r.notes}</div>`:''}
         </div>
@@ -1762,7 +1833,7 @@ function renderRides(){
     item.addEventListener('click',()=>{
       item.classList.toggle('expanded');
       const rid=item.dataset.rideid;
-      const r=rides.find(x=>String(x.id)===rid);
+      const r=allRides.find(x=>String(x.id)===rid);
       if(item.classList.contains('expanded')&&r&&r.coords&&r.coords.length>1){
         const mapId=`rideMap-${r.id}`;
         requestAnimationFrame(()=>initRideMap(rid,r.coords,mapId));
@@ -1883,6 +1954,7 @@ function showToast(msg){
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
+updateCardioUI();
 renderHome();
 
 if('serviceWorker' in navigator){
