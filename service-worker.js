@@ -1,8 +1,17 @@
-const CACHE_NAME = 'workout-tracker-v2';
-const ASSETS = ['/', '/index.html', '/manifest.json', '/service-worker.js'];
+const CACHE_NAME = 'workout-tracker-v3';
+const LOCAL_ASSETS = ['/', '/index.html', '/manifest.json', '/service-worker.js'];
+const CDN_ASSETS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css',
+];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(async cache => {
+      await cache.addAll(LOCAL_ASSETS);
+      try { await cache.addAll(CDN_ASSETS); } catch {}
+    })
+  );
   self.skipWaiting();
 });
 
